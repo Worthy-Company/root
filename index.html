@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <title>Home — Worthy Company</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --surface: #1a1b1e;
+      --text: #e4e4e7;
+      --muted: #71717a;
+      --accent: #7c3aed;
+      --accent-dim: #5b21b6;
+      --border: #2d2d35;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      margin: 0;
+      min-height: 100vh;
+      position: relative;
+    }
+    .hero {
+      background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 3rem 1.5rem 2.5rem;
+      text-align: center;
+    }
+    .hero h1 { font-size: 1.75rem; font-weight: 600; margin: 0 0 0.5rem; }
+    .hero p { color: var(--muted); margin: 0; font-size: 1.05rem; }
+    .hero .cta {
+      display: inline-block;
+      margin-top: 1.5rem;
+      padding: 0.6rem 1.25rem;
+      background: var(--accent);
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    .hero .cta:hover { background: var(--accent-dim); }
+    main {
+      max-width: 40rem;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+    section { margin-bottom: 2.5rem; }
+    section h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 0 0 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .card h3 { font-size: 1rem; margin: 0 0 0.5rem; }
+    .card p { color: var(--muted); margin: 0; font-size: 0.95rem; }
+    .card ul { margin: 0.5rem 0 0; padding-left: 1.25rem; font-size: 0.9rem; color: var(--muted); }
+    .card code { font-size: 0.85em; background: var(--bg); padding: 0.1rem 0.35rem; border-radius: 4px; }
+    .card.planned { border-style: dashed; opacity: 0.9; }
+    .nav-settings { position: absolute; top: 1rem; right: 1rem; }
+    .nav-settings a { color: var(--muted); font-size: 0.9rem; text-decoration: none; }
+    .nav-settings a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <nav class="nav-settings"><a href="setup.html">Settings</a></nav>
+  <div class="hero">
+    <h1>Home</h1>
+    <p>Inbox, transactions, tasks — without Big Tech lock-in.</p>
+    <a href="life/" class="cta">Life</a>
+    <a href="finance/finances.html" class="cta" style="margin-left:0.5rem;">Finances</a>
+  </div>
+  <main>
+    <section>
+      <h2>What we've built</h2>
+      <div class="card">
+        <h3>Inbox by area</h3>
+        <p>Messages grouped by life area (Finance, Kids & school, Health, Travel…). Scan & delete for marketing clutter. Read what matters.</p>
+      </div>
+      <div class="card">
+        <h3>Transactions</h3>
+        <p>Life parses Citi charges from email into a transaction inbox. Finances imports and stores in <code>personal-financial-data</code>. Event purchases become Schedule tasks.</p>
+        <ul>
+          <li>Event charges move out of Transactions into Schedule tasks</li>
+          <li>Recurring identification (GEICO, subscriptions) happens in Finances after import</li>
+          <li><strong>Process</strong> in Finances → stores recurring keys, surfaces hints</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Finance tasks</h3>
+        <p>Annual Account Summary emails → one-click task to retrieve the summary. Tasks live in GitHub, shared across sessions.</p>
+      </div>
+      <div class="card">
+        <h3>Merchant knowledge</h3>
+        <p>Merchant knowledge in <code>finance/config/merchants.json</code> — recurring flag, category, hints. Life consumes from Finances if needed.</p>
+      </div>
+    </section>
+    <section>
+      <h2>What we're building</h2>
+      <div class="card planned">
+        <h3>First-time vs recurring</h3>
+        <p><strong>First-time transactions are more concerning</strong> — they need attention. Recurring charges that meet expectations could go straight to the finance repository, available for finance views but <strong>excluded from handling inbound email</strong> (no inbox work).</p>
+      </div>
+      <div class="card planned">
+        <h3>Recurring + budget</h3>
+        <p>Compare recurring charges to expectations. Alert on changes (price increase, new recurring, expected charge missing).</p>
+      </div>
+      <div class="card planned">
+        <h3>Event ↔ calendar</h3>
+        <p>Connect event purchases to GoFan/Eventbrite confirmation emails and calendar. "Do I have this event scheduled?"</p>
+      </div>
+      <div class="card planned">
+        <h3>Finance guidance</h3>
+        <p>Suggest ways to reduce recurring costs (coverage on older vehicles, subscription audits).</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

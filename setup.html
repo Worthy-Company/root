@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <title>Setup — Worthy Company</title>
+  <style>
+    :root { --bg: #1a1b1e; --surface: #25262b; --text: #e4e4e7; --muted: #71717a; --accent: #7c3aed; --border: #3f3f46; }
+    * { box-sizing: border-box; }
+    body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 36rem; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.5rem; margin: 0 0 0.25rem 0; }
+    .subtitle { color: var(--muted); font-size: 0.9rem; margin: 0 0 1.5rem 0; }
+    .subtitle a { color: var(--accent); }
+    section { margin-bottom: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+    section:first-of-type { border-top: none; padding-top: 0; }
+    section h2 { font-size: 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.75rem 0; }
+    label { display: block; margin-top: 1rem; }
+    input { width: 100%; padding: 0.5rem; box-sizing: border-box; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 6px; }
+    button { margin-top: 0.5rem; margin-right: 0.5rem; padding: 0.5rem 1rem; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+    button.secondary { background: transparent; color: var(--muted); }
+    button.secondary:hover { color: var(--text); }
+    .out { margin-top: 1rem; padding: 1rem; background: var(--surface); border-radius: 6px; white-space: pre-wrap; word-break: break-all; font-size: 0.9rem; }
+    .ok { background: #1e3a1e; color: #86efac; }
+    .err { background: #3a1e1e; color: #fca5a5; }
+    .muted { color: var(--muted); font-size: 0.85rem; margin: 0.25rem 0 0 0; }
+  </style>
+</head>
+<body>
+  <h1>Setup</h1>
+  <p class="subtitle">Email and storage. <a href="index.html">← Home</a> · <a href="life/">Life</a> · <a href="finance/finances.html">Finances</a></p>
+
+  <section id="storage-section">
+    <h2>Storage (GitHub)</h2>
+    <p id="gh-status" class="muted" style="margin:0 0 0.75rem 0;"></p>
+    <p id="gh-actions" style="margin:0 0 0.75rem 0;"></p>
+    <p class="muted">Classic token with <strong>repo</strong> scope. <a href="https://github.com/settings/tokens/new?scopes=repo&description=worthy-company" target="_blank" rel="noopener">Create token</a>. Syncs to <code>config/github-token</code> for restore on new browsers.</p>
+    <div id="gh-form">
+      <label for="gh-token">GitHub token</label>
+      <input type="password" id="gh-token" placeholder="ghp_..." autocomplete="off">
+      <button type="button" id="btn-gh-save">Save</button>
+      <button type="button" id="btn-gh-clear" class="secondary">Clear</button>
+      <p class="muted" style="margin-top:1rem;">New browser? One-time token below to restore from repo.</p>
+      <label for="gh-bootstrap">One-time token</label>
+      <input type="password" id="gh-bootstrap" placeholder="ghp_..." autocomplete="off">
+      <button type="button" id="btn-gh-restore">Restore from repository</button>
+    </div>
+    <div id="out-gh" class="out" style="display:none;"></div>
+  </section>
+
+  <section id="email">
+    <h2>Email (Fastmail)</h2>
+    <p id="fm-status" class="muted" style="margin:0 0 0.75rem 0;"></p>
+    <p class="muted">JMAP token. <a href="https://app.fastmail.com/settings/security/tokens/new" target="_blank" rel="noopener">Create token</a>. Syncs to <code>config/fastmail-token</code> when GitHub is configured.</p>
+    <label for="fm-token">Fastmail token</label>
+    <input type="password" id="fm-token" placeholder="Paste token" autocomplete="off">
+    <button type="button" id="btn-fm-save">Test & save</button>
+    <button type="button" id="btn-fm-clear" class="secondary">Clear</button>
+    <button type="button" id="btn-fm-restore">Restore from repository</button>
+    <div id="out-fm" class="out" style="display:none;"></div>
+  </section>
+
+  <p class="muted" style="margin-top:2rem;">Repos (life-management-data, personal-financial-data) are created when you use the app. No extra steps.</p>
+
+  <script>window.GH_APP_ID = 'worthy-life';</script>
+  <script src="js/github.js"></script>
+  <script>
+    const GH_KEY = 'life_github_token';
+    const FM_KEY = 'fastmail_jmap_token';
+    const CONFIG_KEY = 'life_gh_config';
+    const GH_FILE = 'config/github-token';
+    const FM_FILE = 'config/fastmail-token';
+
+    async function pushToRepo(token, ghToken, file, content, msg) {
+      const cfg = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
+      const dataRepo = cfg.dataRepo;
+      if (!dataRepo) return;
+      const [owner, repo] = dataRepo.split('/');
+      const getRes = await ghFetch(`/repos/${owner}/${repo}/contents/${file}`, ghToken);
+      const body = { message: GH_MSG(msg), content: btoa(unescape(encodeURIComponent(content))), branch: 'main' };
+      if (getRes.ok) { const d = await getRes.json(); body.sha = d.sha; }
+      const putRes = await ghFetch(`/repos/${owner}/${repo}/contents/${file}`, ghToken, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      });
+      if (!putRes.ok) throw new Error((await putRes.json()).message || 'Push failed');
+    }
+
+    function showGhForm(show) {
+      document.getElementById('gh-form').style.display = show ? 'block' : 'none';
+      document.getElementById('gh-actions').innerHTML = show ? '' : '<a href="#" id="gh-change">Change</a>';
+      document.getElementById('gh-change')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showGhForm(true);
+        document.getElementById('gh-actions').innerHTML = '';
+      });
+    }
+
+    (async () => {
+      const tok = localStorage.getItem(GH_KEY)?.trim();
+      const status = document.getElementById('gh-status');
+      if (tok) {
+        document.getElementById('gh-token').value = tok;
+        showGhForm(false);
+        try {
+          const r = await ghFetch('/user', tok);
+          const d = await r.json().catch(() => ({}));
+          status.textContent = r.ok ? '✓ ' + (d.login || 'Connected') : 'Token may be invalid.';
+        } catch (_) {
+          status.textContent = '✓ Saved (check network to verify).';
+        }
+      } else {
+        status.textContent = '';
+      }
+      const fm = localStorage.getItem(FM_KEY)?.trim();
+      if (fm) {
+        document.getElementById('fm-token').value = fm;
+        document.getElementById('fm-status').textContent = '✓ Fastmail token saved';
+      } else {
+        document.getElementById('fm-status').textContent = '';
+      }
+    })();
+
+    document.getElementById('btn-gh-save').addEventListener('click', async () => {
+      const token = document.getElementById('gh-token').value.trim();
+      const out = document.getElementById('out-gh');
+      out.style.display = 'block';
+      out.className = 'out';
+      if (!token) {
+        out.textContent = 'Enter a token first.';
+        out.classList.add('err');
+        return;
+      }
+      try {
+        const r = await ghFetch('/user', token);
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          out.textContent = 'Error: ' + (d.message || r.statusText);
+          out.classList.add('err');
+          return;
+        }
+        localStorage.setItem(GH_KEY, token);
+        const cfg = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
+        if (cfg.dataRepo) {
+          try {
+            await pushToRepo(token, token, GH_FILE, token, 'Sync token');
+            out.textContent = 'Saved and synced. Logged in as: ' + (d.login || '?');
+          } catch (e) {
+            out.textContent = 'Saved locally. (Sync failed: ' + e.message + ')';
+          }
+        } else {
+          out.textContent = 'Saved. Repos created when you use the app.';
+        }
+        out.classList.add('ok');
+        document.getElementById('gh-status').textContent = '✓ ' + (d.login || 'Connected');
+        showGhForm(false);
+      } catch (e) {
+        out.textContent = 'Request failed: ' + e.message;
+        out.classList.add('err');
+      }
+    });
+
+    document.getElementById('btn-gh-restore').addEventListener('click', async () => {
+      const boot = document.getElementById('gh-bootstrap').value.trim();
+      const out = document.getElementById('out-gh');
+      out.style.display = 'block';
+      out.className = 'out';
+      if (!boot) {
+        out.textContent = 'Enter a one-time token.';
+        out.classList.add('err');
+        return;
+      }
+      try {
+        const userRes = await ghFetch('/user', boot);
+        const user = await userRes.json().catch(() => ({}));
+        if (!userRes.ok) {
+          out.textContent = 'Token invalid: ' + (user.message || userRes.statusText);
+          out.classList.add('err');
+          return;
+        }
+        const dataRepo = user.login + '/life-management-data';
+        const r = await ghFetch(`/repos/${dataRepo}/contents/${GH_FILE}`, boot);
+        if (r.status === 404) {
+          out.textContent = 'No token in repository. Save in another browser first.';
+          out.classList.add('err');
+          return;
+        }
+        if (!r.ok) {
+          out.textContent = 'Error: ' + ((await r.json().catch(() => ({}))).message || r.statusText);
+          out.classList.add('err');
+          return;
+        }
+        const data = await r.json();
+        const token = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
+        localStorage.setItem(GH_KEY, token);
+        const cfg = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
+        if (!cfg.dataRepo) {
+          cfg.dataRepo = dataRepo;
+          cfg.financeDataRepo = user.login + '/personal-financial-data';
+          localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+        }
+        document.getElementById('gh-status').textContent = '✓ Restored. ' + user.login;
+        document.getElementById('gh-token').value = token;
+        document.getElementById('gh-bootstrap').value = '';
+        out.textContent = 'Restored.';
+        out.classList.add('ok');
+        showGhForm(false);
+      } catch (e) {
+        out.textContent = 'Request failed: ' + e.message;
+        out.classList.add('err');
+      }
+    });
+
+    document.getElementById('btn-gh-clear').addEventListener('click', () => {
+      localStorage.removeItem(GH_KEY);
+      localStorage.removeItem(CONFIG_KEY);
+      document.getElementById('gh-token').value = '';
+      document.getElementById('gh-bootstrap').value = '';
+      document.getElementById('gh-status').textContent = '';
+      document.getElementById('gh-actions').innerHTML = '';
+      document.getElementById('out-gh').style.display = 'block';
+      document.getElementById('out-gh').textContent = 'Cleared.';
+      document.getElementById('out-gh').className = 'out';
+      showGhForm(true);
+    });
+
+    document.getElementById('btn-fm-save').addEventListener('click', async () => {
+      const token = document.getElementById('fm-token').value.trim();
+      const out = document.getElementById('out-fm');
+      out.style.display = 'block';
+      out.className = 'out';
+      if (!token) {
+        out.textContent = 'Enter a token first.';
+        out.classList.add('err');
+        return;
+      }
+      try {
+        const r = await fetch('https://api.fastmail.com/jmap/session', {
+          method: 'GET',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          out.textContent = 'Error ' + r.status + ': ' + (data.detail || data.error || r.statusText);
+          out.classList.add('err');
+          return;
+        }
+        localStorage.setItem(FM_KEY, token);
+        const ghToken = localStorage.getItem(GH_KEY)?.trim();
+        const cfg = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
+        if (ghToken && cfg.dataRepo) {
+          try {
+            await pushToRepo(token, ghToken, FM_FILE, token, 'Sync Fastmail token');
+          } catch (e) { console.warn('Sync failed:', e.message); }
+        }
+        document.getElementById('fm-status').textContent = '✓ Connected';
+        out.textContent = 'Saved.' + (ghToken && cfg.dataRepo ? ' Synced to repo.' : '');
+        out.classList.add('ok');
+      } catch (e) {
+        out.textContent = 'Request failed: ' + e.message + '\n\nIf CORS errors, use a local server (e.g. python -m http.server 8080).';
+        out.classList.add('err');
+      }
+    });
+
+    document.getElementById('btn-fm-restore').addEventListener('click', async () => {
+      const out = document.getElementById('out-fm');
+      out.style.display = 'block';
+      out.className = 'out';
+      const ghToken = localStorage.getItem(GH_KEY)?.trim();
+      const cfg = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
+      const dataRepo = cfg.dataRepo;
+      if (!ghToken || !dataRepo) {
+        out.textContent = 'Save GitHub token first so we can read from the repository.';
+        out.classList.add('err');
+        return;
+      }
+      try {
+        const [owner, repo] = dataRepo.split('/');
+        const r = await ghFetch(`/repos/${owner}/${repo}/contents/${FM_FILE}`, ghToken);
+        if (r.status === 404) {
+          out.textContent = 'No Fastmail token in repository. Save it above first (with GitHub configured).';
+          out.classList.add('err');
+          return;
+        }
+        if (!r.ok) {
+          out.textContent = 'Error: ' + ((await r.json().catch(() => ({}))).message || r.statusText);
+          out.classList.add('err');
+          return;
+        }
+        const data = await r.json();
+        const fmToken = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
+        localStorage.setItem(FM_KEY, fmToken);
+        document.getElementById('fm-token').value = fmToken;
+        document.getElementById('fm-status').textContent = '✓ Restored';
+        out.textContent = 'Restored.';
+        out.classList.add('ok');
+      } catch (e) {
+        out.textContent = 'Request failed: ' + e.message;
+        out.classList.add('err');
+      }
+    });
+
+    document.getElementById('btn-fm-clear').addEventListener('click', () => {
+      localStorage.removeItem(FM_KEY);
+      document.getElementById('fm-token').value = '';
+      document.getElementById('fm-status').textContent = '';
+      document.getElementById('out-fm').style.display = 'block';
+      document.getElementById('out-fm').textContent = 'Cleared.';
+      document.getElementById('out-fm').className = 'out';
+    });
+  </script>
+</body>
+</html>
