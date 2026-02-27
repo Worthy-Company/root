@@ -1,0 +1,6 @@
+[submodule "life"]
+	path = life
+	url = https://github.com/Worthy-Company/e-mail-management.git
+[submodule "finance"]
+	path = finance
+	url = https://github.com/Worthy-Company/finance.git
