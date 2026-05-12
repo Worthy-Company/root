@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email prototype — summary for Spark</title>
+  <style>
+    :root { --bg: #0f0f12; --surface: #1a1b1e; --text: #e4e4e7; --muted: #71717a; --accent: #7c3aed; --border: #2d2d35; }
+    * { box-sizing: border-box; }
+    body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; margin: 0; padding: 1.5rem; max-width: 48rem; margin-left: auto; margin-right: auto; }
+    a { color: var(--accent); }
+    h1 { font-size: 1.5rem; margin-top: 0; }
+    h2 { font-size: 1.15rem; margin-top: 1.5rem; color: var(--text); }
+    h3 { font-size: 1rem; margin-top: 1rem; color: var(--muted); }
+    p { margin: 0.75rem 0; }
+    ul { margin: 0.75rem 0; padding-left: 1.5rem; }
+    li { margin: 0.35rem 0; }
+    .breadcrumb { font-size: 0.9rem; color: var(--muted); margin-bottom: 1.5rem; }
+    .breadcrumb a { color: var(--muted); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--accent); }
+    strong { font-weight: 600; }
+    em { font-style: italic; }
+  </style>
+</head>
+<body>
+  <nav class="breadcrumb"><a href="../">public</a> / e-mail</nav>
+
+  <h1>Email prototype — summary for Spark</h1>
+
+  <h2>Context</h2>
+  <p>This note summarizes the email workflow prototype I'm building so you can see the kinds of problems I'm trying to solve, and where Spark (or something like it) might eventually fit.</p>
+  <p>I was inspired by Daniel Levitin's <em>The Organized Mind</em>, especially the idea that our brains work better when information is <strong>grouped and externalized</strong> rather than left as a mixed, scrolling inbox. Email, as designed in the 1960s, gives us a single chronological stream; my goal is to <strong>translate that stream into structured, meaningful units of work</strong>.</p>
+
+  <h2>What I'm trying to build</h2>
+  <p><strong>High-level goal</strong>: a system that <strong>processes inbound email for me</strong> and turns it into structured data, so that:</p>
+  <ul>
+    <li>My inbox is <em>not</em> my to‑do list.</li>
+    <li>I can see tasks, financial activity, and relationship follow‑ups in calm, dedicated views.</li>
+    <li>I can answer "what do I need to do now?" without scrolling a chaotic inbox.</li>
+  </ul>
+  <p>Concretely, I'm building:</p>
+  <ul>
+    <li><strong>A small web app</strong> that talks to a personal data repo (on GitHub) and some scripts that read email from my provider (Fastmail/Bridge).</li>
+    <li>The scripts parse incoming mail and write JSON into that data repo:
+      <ul>
+        <li><code>tasks.json</code> — things I need to do.</li>
+        <li><code>transaction-inbox.json</code> — parsed financial transactions.</li>
+        <li><code>career/natework.json</code> — people, notes, and follow‑ups.</li>
+      </ul>
+    </li>
+    <li>The web UI gives purpose‑specific views: <strong>Tasks</strong>, <strong>Natework</strong> (contacts/follow‑ups), and <strong>Finances</strong>.</li>
+  </ul>
+  <p>In other words, email is just one <em>input channel</em> into a <strong>structured, version‑controlled life‑management system</strong>, not the place where I manage work.</p>
+
+  <h2>How it differs from today's email clients</h2>
+  <p>Most modern clients (including Spark) do helpful things like splitting out Notifications / Newsletters / New senders, and providing AI features primarily focused on <strong>outbound composition</strong>.</p>
+  <p>Where I still feel a gap:</p>
+  <ul>
+    <li>I don't primarily need help writing email; I need help <strong>processing it into the way I live</strong>:
+      <ul>
+        <li>"This message should become a task in my task system."</li>
+        <li>"This message is a financial transaction that should join my transaction log."</li>
+        <li>"This exchange represents a relationship I want to nurture and follow up on."</li>
+      </ul>
+    </li>
+    <li>Even helpful groupings still leave me with the mental work of deciding what each message <em>means</em>, turning that into a concrete unit (task, transaction, contact), and making sure it doesn't get lost.</li>
+  </ul>
+  <p>The prototype uses AI and scripts to parse patterns, translate mail into structured JSON (tasks, transactions, contact updates), and let Git/GitHub handle history and sync. I'm not giving an AI agent free access to my live inbox; I'm using AI as a tool I call on demand, with outputs stored as data I control.</p>
+
+  <h2>What I'd love from a client like Spark</h2>
+  <ul>
+    <li><strong>First‑class "translate into data" actions</strong>: "Make this a task," "Recognize this as a bill and send to finance log," "Update this person and their next follow‑up."</li>
+    <li><strong>Opinionated inbox views based on meaning</strong>: "Things you need to <em>do</em>," "Money that moved," "People you might want to reconnect with."</li>
+    <li><strong>Extensibility</strong>: Let advanced users define patterns and outputs (e.g. webhooks, append to a file); let external tools plug in as first‑class destinations.</li>
+  </ul>
+  <p>In short: I'm building an email‑driven personal operating system where <strong>email is the raw material</strong>, and structured data + calm UIs are how I actually manage life. If Spark moves in this direction, I'd be happy to walk through the prototype and workflows with your product team.</p>
+</body>
+</html>
