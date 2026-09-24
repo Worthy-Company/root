@@ -40,8 +40,22 @@
     return parsed;
   }
 
+  async function getHealthcareBills(ghConfig, token) {
+    const repo = getFinanceDataRepo(ghConfig);
+    if (!repo) return [];
+    const [owner, repoName] = repo.split('/');
+    const branch = ghConfig.branch || 'transactions';
+    const r = await ghFetch(`/repos/${owner}/${repoName}/contents/healthcare-bills.json?ref=${branch}`, token);
+    if (r.status === 404) return [];
+    if (!r.ok) throw new Error('GitHub: ' + (await r.json()).message || r.statusText);
+    const data = await r.json();
+    const parsed = JSON.parse(atob(data.content.replace(/\n/g, '')));
+    return parsed.bills || [];
+  }
+
   window.worthyCompany = {
     getFinanceData,
-    getProcessedRecurring
+    getProcessedRecurring,
+    getHealthcareBills
   };
 })();

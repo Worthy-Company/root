@@ -8,6 +8,12 @@ function fmtDate(d) {
   return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+// Unique id for a newly saved item. `prefix` only shows up on the fallback
+// path, for browsers without crypto.randomUUID.
+function newId(prefix = 'id') {
+  try { return crypto.randomUUID(); } catch (_) { return prefix + '_' + Math.random().toString(16).slice(2) + '_' + Date.now(); }
+}
+
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }

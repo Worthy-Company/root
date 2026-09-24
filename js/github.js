@@ -106,6 +106,24 @@
     if (newSha) await ghWaitForFreshRead(token, repo, filePath, branchName, newSha);
     return { sha: newSha, commitSha: data.commit?.sha };
   }
+  /**
+   * Save a JSON file (payload object, stamped with updatedAt) over whatever
+   * is there now. The file may have changed on GitHub between our read and
+   * our write (e.g. another save landed first), so on failure retry once
+   * with a freshly-read sha.
+   */
+  async function ghSaveJson(token, repo, filePath, payload, branchName, message) {
+    const content = { ...payload, updatedAt: new Date().toISOString() };
+    async function attemptOnce() {
+      const existing = await ghReadFile(token, repo, filePath, branchName);
+      return ghWriteFile(token, repo, filePath, content, branchName, existing?.sha, GH_MSG(message));
+    }
+    try {
+      return await attemptOnce();
+    } catch (err) {
+      return await attemptOnce();
+    }
+  }
   /** Create a PR or return existing open PR URL. */
   async function ghCreateOrUpdatePr(token, repo, mainBranch, headBranch, title, body) {
     const [owner, repoName] = repo.split('/');
@@ -127,6 +145,7 @@
   window.ghEnsureBranch = ghEnsureBranch;
   window.ghReadFile = ghReadFile;
   window.ghWriteFile = ghWriteFile;
+  window.ghSaveJson = ghSaveJson;
   window.ghWaitForFreshRead = ghWaitForFreshRead;
   window.ghCreateOrUpdatePr = ghCreateOrUpdatePr;
 })();
