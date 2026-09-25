@@ -139,6 +139,9 @@
     const pr = await createRes.json();
     return pr.html_url;
   }
+  // The branch of the finance data repo used when none is configured. One
+  // definition, so Setup and every page that reads the config agree.
+  window.DEFAULT_DATA_BRANCH = 'updates';
   window.GH_USER_AGENT = GH_USER_AGENT;
   window.GH_MSG = GH_MSG;
   window.ghFetch = ghFetch;

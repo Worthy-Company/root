@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Shared test runner. Each area keeps its own checks next to its own code
- * (life/test/*-check.mjs, finance/test/*-check.mjs); this file and the rest of
+ * (life/test/*.mjs, finance/test/*.mjs); this file and the rest of
  * test/ (servers, helpers, Playwright) are the shared infrastructure they run on.
  *
  * Checks run one at a time (each owns its own server lifecycle on fixed
@@ -31,7 +31,7 @@ if (requested && !areas.includes(requested)) {
 const files = (requested ? [requested] : areas).flatMap(area => {
   const dir = path.join(repoRoot, area, 'test');
   if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir).filter(f => f.endsWith('-check.mjs')).sort().map(f => path.join(dir, f));
+  return fs.readdirSync(dir).filter(f => f.endsWith('.mjs')).sort().map(f => path.join(dir, f));
 });
 
 let failures = 0;
