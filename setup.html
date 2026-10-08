@@ -27,6 +27,12 @@
   </style>
 </head>
 <body>
+  <div id="file-warning" style="display:none; background:#451a1a; color:#fca5a5; padding:1rem; border-radius:8px; margin-bottom:1.5rem;">
+    <strong>You opened this as a file (<code>file://</code>).</strong>
+    On <code>file://</code>, Firefox gives each folder its own separate storage, so a token you save here won't be visible to pages in <code>finance/</code>.
+    Serve the project over one origin instead: run <code>python -m http.server 8080</code> in the project root, then open
+    <code>http://localhost:8080/setup.html</code>.
+  </div>
   <h1>Setup</h1>
   <p class="subtitle">Email and storage. <a href="index.html">← Home</a> · <a href="life/">Life</a> · <a href="finance/finances.html">Finances</a></p>
 
@@ -34,7 +40,7 @@
     <h2>Storage (GitHub)</h2>
     <p id="gh-status" class="muted" style="margin:0 0 0.75rem 0;"></p>
     <p id="gh-actions" style="margin:0 0 0.75rem 0;"></p>
-    <p class="muted">Classic token with <strong>repo</strong> scope. <a href="https://github.com/settings/tokens/new?scopes=repo&description=worthy-company" target="_blank" rel="noopener">Create token</a>. Syncs to <code>config/github-token</code> for restore on new browsers.</p>
+    <p class="muted">Classic token with <strong>repo</strong> scope. <a href="#" id="gh-create-link" target="_blank" rel="noopener">Create token</a>. Syncs to <code>config/github-token</code> for restore on new browsers.</p>
     <div id="gh-form">
       <label for="gh-token">GitHub token</label>
       <input type="password" id="gh-token" placeholder="ghp_..." autocomplete="off">
@@ -59,15 +65,64 @@
     <button type="button" id="btn-fm-restore">Restore from repository</button>
     <div id="out-fm" class="out" style="display:none;"></div>
   </section>
+  <section id="finance">
+    <h2>Finance data</h2>
+    <p class="muted" style="margin:0 0 0.75rem 0;">Which repo + branch Finances uses for <code>transactions.json</code> and <code>expenses.json</code>.</p>
+    <label for="finance-repo">Financial data repo</label>
+    <input type="text" id="finance-repo" placeholder="owner/personal-financial-data" autocomplete="off">
+    <label for="finance-branch">Finance data branch</label>
+    <input type="text" id="finance-branch" autocomplete="off">
+    <button type="button" id="btn-finance-save">Save finance config</button>
+    <button type="button" id="btn-finance-reset" class="secondary">Reset branch to default</button>
+    <p class="muted" style="margin-top:0.75rem;">Only affects Finances; Life (email/tasks) continues to use <code>life-management-data</code>.</p>
+  </section>
+
+  <p class="muted" style="margin-top:2rem;">Repos (life-management-data, personal-financial-data) are created when you use the app. No extra steps.</p>
+
+  <section id="diagnostics">
+    <h2>Diagnostics</h2>
+    <p class="muted" style="margin:0 0 0.75rem 0;">Exactly what's actually saved in this browser right now — copy this to share for debugging. Token is masked, never shown in full.</p>
+    <pre id="diag-output" class="out" style="display:block; white-space:pre-wrap;"></pre>
+    <button type="button" id="btn-diag-refresh" class="secondary">Refresh diagnostics</button>
+  </section>
 
   <p class="muted" style="margin-top:2rem;">Repos (life-management-data, personal-financial-data) are created when you use the app. No extra steps.</p>
 
   <script>window.GH_APP_ID = 'worthy-life';</script>
   <script src="js/github.js"></script>
   <script>
-    const GH_KEY = 'life_github_token';
+    function detectDeviceContext() {
+      const ua = navigator.userAgent;
+      let browser = 'browser';
+      const brands = navigator.userAgentData?.brands;
+      const brandHit = brands?.find(b => !/Not.A.Brand/i.test(b.brand));
+      if (brandHit) {
+        browser = brandHit.brand;
+      } else if (/Edg\//.test(ua)) browser = 'Edge';
+      else if (/OPR\//.test(ua)) browser = 'Opera';
+      else if (/Chrome\//.test(ua)) browser = 'Chrome';
+      else if (/Firefox\//.test(ua)) browser = 'Firefox';
+      else if (/Safari\//.test(ua)) browser = 'Safari';
+
+      let os = 'device';
+      if (/Windows/.test(ua)) os = 'Windows';
+      else if (/Mac OS X/.test(ua)) os = 'Mac';
+      else if (/Android/.test(ua)) os = 'Android';
+      else if (/iPhone|iPad/.test(ua)) os = 'iOS';
+      else if (/Linux/.test(ua)) os = 'Linux';
+
+      return `${browser} on ${os}`;
+    }
+
+    (function setCreateTokenLink() {
+      const desc = `life-management (root app), created via ${detectDeviceContext()}`;
+      const link = document.getElementById('gh-create-link');
+      link.href = 'https://github.com/settings/tokens/new?scopes=repo&description=' + encodeURIComponent(desc);
+    })();
+
+    const GH_KEY = 'github_token';
     const FM_KEY = 'fastmail_jmap_token';
-    const CONFIG_KEY = 'life_gh_config';
+    const CONFIG_KEY = 'data_configuration';
     const GH_FILE = 'config/github-token';
     const FM_FILE = 'config/fastmail-token';
 
@@ -95,6 +150,14 @@
       });
     }
 
+    function getConfig() {
+      return JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
+    }
+
+    function setConfig(cfg) {
+      localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+    }
+
     (async () => {
       const tok = localStorage.getItem(GH_KEY)?.trim();
       const status = document.getElementById('gh-status');
@@ -117,6 +180,16 @@
         document.getElementById('fm-status').textContent = '✓ Fastmail token saved';
       } else {
         document.getElementById('fm-status').textContent = '';
+      }
+
+      // Prefill finance repo + branch from existing config.
+      const cfg = getConfig();
+      const financeRepoInput = document.getElementById('finance-repo');
+      const financeBranchInput = document.getElementById('finance-branch');
+      if (financeRepoInput) financeRepoInput.value = cfg.financeDataRepo || '';
+      if (financeBranchInput) {
+        financeBranchInput.placeholder = DEFAULT_DATA_BRANCH;
+        financeBranchInput.value = cfg.branch || DEFAULT_DATA_BRANCH;
       }
     })();
 
@@ -307,6 +380,76 @@
       document.getElementById('out-fm').textContent = 'Cleared.';
       document.getElementById('out-fm').className = 'out';
     });
+
+    document.getElementById('btn-finance-save').addEventListener('click', () => {
+      const repoVal = document.getElementById('finance-repo').value.trim();
+      const branchVal = document.getElementById('finance-branch').value.trim() || DEFAULT_DATA_BRANCH;
+      const cfg = getConfig();
+      if (repoVal) {
+        cfg.financeDataRepo = repoVal;
+      }
+      cfg.branch = branchVal;
+      setConfig(cfg);
+      const out = document.getElementById('out-gh');
+      out.style.display = 'block';
+      out.className = 'out ok';
+      out.textContent = 'Finance config saved: ' + (cfg.financeDataRepo || '(default repo)') + ' @ ' + cfg.branch;
+    });
+
+    document.getElementById('btn-finance-reset').addEventListener('click', () => {
+      const cfg = getConfig();
+      cfg.branch = DEFAULT_DATA_BRANCH;
+      setConfig(cfg);
+      const financeBranchInput = document.getElementById('finance-branch');
+      if (financeBranchInput) financeBranchInput.value = DEFAULT_DATA_BRANCH;
+      const out = document.getElementById('out-gh');
+      out.style.display = 'block';
+      out.className = 'out ok';
+      out.textContent = 'Finance branch reset to updates.';
+    });
+
+    function maskToken(t) {
+      if (!t) return '(not set)';
+      if (t.length <= 8) return '(set, ' + t.length + ' chars)';
+      return t.slice(0, 4) + '…' + t.slice(-4) + ' (' + t.length + ' chars)';
+    }
+
+    function renderDiagnostics() {
+      const ghToken = localStorage.getItem(GH_KEY)?.trim();
+      const fmToken = localStorage.getItem(FM_KEY)?.trim();
+      const cfg = getConfig();
+      const lines = [
+        'Diagnostics — ' + new Date().toISOString(),
+        'Device: ' + detectDeviceContext(),
+        'Page origin: ' + location.origin + ' (protocol: ' + location.protocol + ')',
+        '',
+        'localStorage keys present:',
+        '  ' + Object.keys(localStorage).sort().join(', '),
+        '',
+        'GitHub token (' + GH_KEY + '): ' + maskToken(ghToken),
+        'Fastmail token (' + FM_KEY + '): ' + maskToken(fmToken),
+        '',
+        'Config (' + CONFIG_KEY + '):',
+        '  dataRepo:        ' + (cfg.dataRepo || '(not set)'),
+        '  financeDataRepo: ' + (cfg.financeDataRepo || '(not set)'),
+        '  branch:          ' + (cfg.branch || '(not set)'),
+        '',
+        'Finances page readiness:',
+        '  GitHub token set:      ' + (ghToken ? 'yes' : 'NO'),
+        '  financeDataRepo set:   ' + (cfg.financeDataRepo ? 'yes' : 'NO'),
+        '  => Finances will load:  ' + (ghToken && cfg.financeDataRepo ? 'YES' : 'NO — ' +
+          (!ghToken && !cfg.financeDataRepo ? 'missing token AND repo' :
+           !ghToken ? 'missing GitHub token' : 'missing financeDataRepo')),
+      ];
+      document.getElementById('diag-output').textContent = lines.join('\n');
+    }
+
+    if (location.protocol === 'file:') {
+      document.getElementById('file-warning').style.display = 'block';
+    }
+
+    document.getElementById('btn-diag-refresh').addEventListener('click', renderDiagnostics);
+    renderDiagnostics();
   </script>
 </body>
 </html>

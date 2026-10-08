@@ -14,6 +14,15 @@ function newId(prefix = 'id') {
   try { return crypto.randomUUID(); } catch (_) { return prefix + '_' + Math.random().toString(16).slice(2) + '_' + Date.now(); }
 }
 
+// A short id (three characters) that isn't in `taken`. A personal app doesn't need a full UUID (see
+// root/BACKLOG.md, "ids are far too long"; newId above is the debt). Retries until it is unused, so a
+// clash can't happen.
+function shortId(taken = []) {
+  let id;
+  do { id = Math.random().toString(36).slice(2, 5); } while (id.length < 3 || taken.includes(id));
+  return id;
+}
+
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -36,6 +45,18 @@ async function withSaveFeedback({ disable, msgEl }, work) {
   } finally {
     controls.forEach(el => { el.disabled = false; });
   }
+}
+
+// A statement as lowercase words joined by hyphens, for the human-readable
+// tail of an address ("Help my son feel at home" -> "help-my-son-feel-at-home").
+// Decoration only: nothing ever looks a record up by this, so rewording it
+// (or a stale copy in an old link) can't break anything.
+function addressWords(text) {
+  return String(text || '')
+    .normalize('NFKD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 function escapeHtml(s) {

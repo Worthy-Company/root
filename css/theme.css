@@ -21,6 +21,7 @@ h3.section { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06
 .field-row input, .field-row select { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 5px; padding: 0.4rem 0.55rem; font-size: 0.85rem; width: 100%; }
 .btn { background: var(--accent); color: white; border: none; border-radius: 5px; padding: 0.45rem 0.9rem; font-size: 0.85rem; cursor: pointer; }
 .btn:hover { background: var(--accent-dim); }
+.btn:disabled, .btn:disabled:hover { opacity: 0.5; cursor: not-allowed; }
 .btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--muted); }
 .btn.secondary:hover { color: var(--text); border-color: var(--muted); }
 .process-actions { margin-top: 0.9rem; display: flex; gap: 0.6rem; align-items: center; }
