@@ -32,3 +32,9 @@ table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); }
 th { color: var(--muted); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
 .note { color: var(--muted); font-size: 0.8rem; margin-top: 0.75rem; font-style: italic; }
+/* The merchant picker's offers (js/merchants.js wireMerchantPicker): a visible list under the input. */
+.picker .offers { display: flex; flex-direction: column; align-items: stretch; }
+.picker .offers:empty { display: none; }
+.picker .offers .offers-label { color: var(--muted); font-size: 0.72rem; padding: 0.3rem 0.55rem 0.1rem; }
+.picker .offers button { text-align: left; background: var(--bg); border: 1px solid var(--border); border-top: 0; color: var(--text); padding: 0.35rem 0.55rem; font-size: 0.85rem; cursor: pointer; }
+.picker .offers button:hover, .picker .offers button.active { background: var(--surface); border-color: var(--accent); }

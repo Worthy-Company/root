@@ -23,6 +23,15 @@ function shortId(taken = []) {
   return id;
 }
 
+// Dollars as typed ("140.00", "$1,140") to whole cents, or null if it isn't an amount. Nothing typed is
+// nothing (0), not a mistake.
+function centsFromTyped(text) {
+  const cleaned = String(text || '').replace(/[$,\s]/g, '');
+  if (cleaned === '') return 0;
+  if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null;
+  return Math.round(parseFloat(cleaned) * 100);
+}
+
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -32,14 +41,17 @@ function todayStr() {
 // hand-roll it. `disable` may be a single element or an array — all are
 // disabled up front and re-enabled in a finally, in case the caller's own
 // success path doesn't already replace the DOM (if it does, this is a
-// harmless no-op on now-detached nodes).
-async function withSaveFeedback({ disable, msgEl }, work) {
+// harmless no-op on now-detached nodes). A form that clears itself after
+// saving passes `successText: ''`: "Saved." beside the Save button of a
+// blank form reads as if the blank form had been saved, so that page shows
+// what was saved on the saved item instead.
+async function withSaveFeedback({ disable, msgEl, successText = 'Saved.' }, work) {
   const controls = (Array.isArray(disable) ? disable : [disable]).filter(Boolean);
   controls.forEach(el => { el.disabled = true; });
   if (msgEl) { msgEl.textContent = 'Saving…'; msgEl.className = 'save-msg'; }
   try {
     await work();
-    if (msgEl) { msgEl.textContent = 'Saved.'; msgEl.className = 'save-msg ok'; }
+    if (msgEl) { msgEl.textContent = successText; msgEl.className = 'save-msg ok'; }
   } catch (err) {
     if (msgEl) { msgEl.textContent = 'Error: ' + err.message; msgEl.className = 'save-msg error'; }
   } finally {

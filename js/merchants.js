@@ -22,12 +22,30 @@ async function pushMerchants(token, repo, branch, merchants) {
   await ghWriteFile(token, repo, MERCHANTS_FILE, content, branch, existing?.sha, GH_MSG('Update merchants'));
 }
 
+// A merchant can carry categories (ids from the starting list in finance/merchant-categories.json, for
+// example 'healthcare' and 'insurance'). A page that knows what kind of merchant it is asking for names
+// its category, and choosing a merchant there adds the category, so the next time it is offered first.
+// Nothing is guessed or worked out: the category is only ever set by use.
+
 // The typed name is an existing merchant or it makes a new one (the form has already said "New ...").
-// Matched without regard to case. `isNew` says whether the merchant still has to be saved.
-function merchantForName(merchants, name) {
+// Matched without regard to case. `isNew` says the merchant has to be added; `changed` says it has to be
+// saved at all (it is new, or it just gained `category`). Save the merchant with mergeMerchant.
+function merchantForName(merchants, name, category) {
   const known = merchants.find(m => m.name.toLowerCase() === name.toLowerCase());
-  if (known) return { merchant: known, isNew: false };
-  return { merchant: { id: shortId(merchants.map(m => m.id)), name }, isNew: true };
+  if (known) {
+    const has = (known.categories || []).includes(category);
+    if (!category || has) return { merchant: known, isNew: false, changed: false };
+    return { merchant: { ...known, categories: [...(known.categories || []), category] }, isNew: false, changed: true };
+  }
+  const merchant = { id: shortId(merchants.map(m => m.id)), name, ...(category ? { categories: [category] } : {}) };
+  return { merchant, isNew: true, changed: true };
+}
+
+// The merchants with this one added, or replacing the one with its id.
+function mergeMerchant(merchants, merchant) {
+  return merchants.some(m => m.id === merchant.id)
+    ? merchants.map(m => (m.id === merchant.id ? merchant : m))
+    : [...merchants, merchant];
 }
 
 // The names to offer as someone types: every merchant, plus any other names given (older lines that
@@ -46,11 +64,16 @@ function merchantNames(merchants, otherNames = []) {
 // if nothing begins with it, Tab leaves the name alone, so a new name stays new. The offers are not tab
 // stops: Tab is for completing the name and moving on, not for walking the list.
 //
-//   const picker = wireMerchantPicker({ inputEl, offersEl, noteEl, noun: 'provider', onChange });
-//   picker.setNames(merchantNames(merchants));   // once the merchants are read
+// With a `category`, merchants in it are offered first, and merchants outside it only when none in it
+// matches what was typed, under a quiet "Other merchants", so a business with a similar name is still
+// reachable and never gets copied by mistake.
+//
+//   const picker = wireMerchantPicker({ inputEl, offersEl, noteEl, noun: 'provider', category: 'healthcare', onChange });
+//   picker.setMerchants(merchants);              // once the merchants are read (or setNames(list) for no category)
 //   picker.refresh();                            // after the input's value is set from code
-function wireMerchantPicker({ inputEl, offersEl, noteEl, noun = 'merchant', onChange = () => {} }) {
-  let names = [];
+function wireMerchantPicker({ inputEl, offersEl, noteEl, noun = 'merchant', category = null, onChange = () => {} }) {
+  let preferred = [];
+  let others = [];
   let highlighted = -1;
   const optionEls = () => [...offersEl.querySelectorAll('button[role="option"]')];
 
@@ -65,9 +88,13 @@ function wireMerchantPicker({ inputEl, offersEl, noteEl, noun = 'merchant', onCh
 
   function refresh() {
     const typed = inputEl.value.trim().toLowerCase();
-    const matches = typed ? names.filter(n => n.toLowerCase().includes(typed)) : [];
-    const exact = matches.some(n => n.toLowerCase() === typed);
-    offersEl.innerHTML = exact ? '' : matches.map(n => `<button type="button" role="option" tabindex="-1">${escapeHtml(n)}</button>`).join('');
+    const matching = (list) => (typed ? list.filter(n => n.toLowerCase().includes(typed)) : []);
+    const exact = [...preferred, ...others].some(n => n.toLowerCase() === typed);
+    const inCategory = matching(preferred);
+    // Merchants outside the category are offered only when none in it matches, with a label.
+    const shown = inCategory.length ? inCategory : matching(others);
+    const label = !inCategory.length && shown.length ? '<div class="offers-label">Other merchants</div>' : '';
+    offersEl.innerHTML = exact ? '' : label + shown.map(n => `<button type="button" role="option" tabindex="-1">${escapeHtml(n)}</button>`).join('');
     noteEl.textContent = typed && !exact ? `New ${noun}: ${inputEl.value.trim()}` : '';
     highlight(-1);
   }
@@ -103,7 +130,22 @@ function wireMerchantPicker({ inputEl, offersEl, noteEl, noun = 'merchant', onCh
   });
 
   return {
-    setNames(list) { names = list; },
+    // Every name is offered alike (no category).
+    setNames(list) { preferred = list; others = []; },
+    // Merchants in this picker's category first, the rest as "Other merchants". `otherNames` are names
+    // with no merchant yet (older lines), offered with the rest.
+    setMerchants(merchants, otherNames = []) {
+      const inCategory = merchants.filter(m => !category || (m.categories || []).includes(category));
+      preferred = merchantNames(inCategory);
+      const have = new Set(preferred.map(n => n.toLowerCase()));
+      others = merchantNames(merchants.filter(m => !inCategory.includes(m)), otherNames).filter(n => !have.has(n.toLowerCase()));
+    },
+    // Offer these names now, whatever is typed (for example the names used before with a code that has
+    // just been typed). Typing in the box goes back to offering matches.
+    offerNames(list) {
+      offersEl.innerHTML = list.map(n => `<button type="button" role="option" tabindex="-1">${escapeHtml(n)}</button>`).join('');
+      highlight(-1);
+    },
     refresh
   };
 }
