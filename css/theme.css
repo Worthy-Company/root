@@ -1,0 +1,40 @@
+:root { --bg: #0f0f12; --surface: #1a1b1e; --text: #e4e4e7; --muted: #71717a; --accent: #7c3aed; --accent-dim: #5b21b6; --border: #2d2d35; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; }
+* { box-sizing: border-box; }
+body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; margin: 0; min-height: 100vh; padding-bottom: 3rem; }
+header { border-bottom: 1px solid var(--border); padding: 1.5rem; }
+header h1 { margin: 0 0 0.25rem; font-size: 1.4rem; font-weight: 600; }
+header p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+header .crumbs a { color: var(--accent); text-decoration: none; }
+main { max-width: 780px; margin: 0 auto; padding: 1.5rem; }
+#status { color: var(--muted); font-size: 0.9rem; margin-bottom: 1rem; }
+#status.error { color: #fca5a5; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+.card h2 { margin: 0 0 0.15rem; font-size: 1.15rem; }
+.card .sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.9rem; }
+.balance { font-size: 1.6rem; font-weight: 600; }
+.balance .asof { font-size: 0.8rem; color: var(--muted); font-weight: 400; margin-left: 0.4rem; }
+h3.section { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 1.1rem 0 0.5rem; display: flex; align-items: center; justify-content: space-between; }
+.process-box { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; }
+.process-box .toplabel { font-size: 0.8rem; color: var(--muted); }
+.field-row { display: flex; gap: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+.field-row label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 0.2rem; }
+.field-row input, .field-row select { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 5px; padding: 0.4rem 0.55rem; font-size: 0.85rem; width: 100%; }
+.btn { background: var(--accent); color: white; border: none; border-radius: 5px; padding: 0.45rem 0.9rem; font-size: 0.85rem; cursor: pointer; }
+.btn:hover { background: var(--accent-dim); }
+.btn:disabled, .btn:disabled:hover { opacity: 0.5; cursor: not-allowed; }
+.btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.btn.secondary:hover { color: var(--text); border-color: var(--muted); }
+.process-actions { margin-top: 0.9rem; display: flex; gap: 0.6rem; align-items: center; }
+.save-msg { font-size: 0.8rem; color: var(--muted); }
+.save-msg.ok { color: var(--good); }
+.save-msg.error { color: #fca5a5; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.note { color: var(--muted); font-size: 0.8rem; margin-top: 0.75rem; font-style: italic; }
+/* The merchant picker's offers (js/merchants.js wireMerchantPicker): a visible list under the input. */
+.picker .offers { display: flex; flex-direction: column; align-items: stretch; }
+.picker .offers:empty { display: none; }
+.picker .offers .offers-label { color: var(--muted); font-size: 0.72rem; padding: 0.3rem 0.55rem 0.1rem; }
+.picker .offers button { text-align: left; background: var(--bg); border: 1px solid var(--border); border-top: 0; color: var(--text); padding: 0.35rem 0.55rem; font-size: 0.85rem; cursor: pointer; }
+.picker .offers button:hover, .picker .offers button.active { background: var(--surface); border-color: var(--accent); }

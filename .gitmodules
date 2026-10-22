@@ -4,3 +4,6 @@
 [submodule "finance"]
 	path = finance
 	url = https://github.com/Worthy-Company/finance.git
+[submodule "things"]
+	path = things
+	url = https://github.com/Worthy-Company/things-code.git

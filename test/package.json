@@ -1,0 +1,14 @@
+{
+  "name": "root-test-tooling",
+  "private": true,
+  "type": "module",
+  "description": "Local test tooling for the root app — not part of the shipped app itself, which stays plain static HTML/JS.",
+  "scripts": {
+    "test": "node run-all.mjs",
+    "test:life": "node run-all.mjs life",
+    "test:finance": "node run-all.mjs finance"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}
