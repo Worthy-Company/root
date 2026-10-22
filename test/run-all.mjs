@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Shared test runner. Each area keeps its own checks next to its own code
- * (life/test/*.mjs, finance/test/*.mjs); this file and the rest of
+ * (life/test/*.mjs, finance/test/*.mjs, things/test/*.mjs); this file and the rest of
  * test/ (servers, helpers, Playwright) are the shared infrastructure they run on.
  *
  * Checks run one at a time (each owns its own server lifecycle on fixed
@@ -10,6 +10,7 @@
  *   node run-all.mjs            every area (use after touching shared js/ or css/)
  *   node run-all.mjs life       just life/test
  *   node run-all.mjs finance    just finance/test
+ *   node run-all.mjs things     just things/test
  *
  * `npm test`, `npm run test:life`, `npm run test:finance` from test/ do the same.
  */
@@ -20,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
-const areas = ['life', 'finance'];
+const areas = ['life', 'finance', 'things'];
 
 const requested = process.argv[2];
 if (requested && !areas.includes(requested)) {

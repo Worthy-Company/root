@@ -13,6 +13,12 @@
  * `seed` is { 'path/in/data/repo.json': content }, or a function that is
  * given a `write(file, content)` and calls it. `config` replaces the
  * data_configuration the page reads (default: the finance fixture repo).
+ * `token` is the GitHub token the browser starts out holding (default 'stub-token'); null means a
+ * fresh browser with none. `requireToken` makes the GitHub stand-in refuse any request that does not carry that token.
+ * `pageGlobals` are extra values set on `window` before the page loads (how a
+ * test points the page at a stand-in that only its own area uses, kept in
+ * that area's test/ folder), and `cleanup` is a list of functions to run
+ * when the test ends (to stop such a stand-in).
  * Tests still describe themselves in their own header comment; see
  * how-we-work/testing.md and finance/test/link-to-action.mjs for the style.
  */
@@ -41,7 +47,7 @@ function freePort() {
   });
 }
 
-export async function startTest({ name, seed = {}, config = FINANCE_CONFIG, timeout = 3000 }) {
+export async function startTest({ name, seed = {}, config = FINANCE_CONFIG, token = 'stub-token', requireToken = null, pageGlobals = {}, cleanup = [], timeout = 3000 }) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), name + '-'));
   const write = (file, content) => {
     const filePath = path.join(dataDir, file);
@@ -54,18 +60,19 @@ export async function startTest({ name, seed = {}, config = FINANCE_CONFIG, time
   const appPort = await freePort();
   const stubPort = await freePort();
   const appServer = await startStaticServer({ dir: repoRoot, port: appPort });
-  const stubServer = await startStubServer({ dir: dataDir, port: stubPort });
+  const stubServer = await startStubServer({ dir: dataDir, port: stubPort, requireToken });
   const browser = await chromium.launch();
   const page = await browser.newPage();
   const pageErrors = watchForErrors(page);
   page.setDefaultTimeout(timeout);
 
   // The page talks to the stand-in, not GitHub.
-  await page.addInitScript(({ stub, cfg }) => {
+  await page.addInitScript(({ stub, cfg, tok, extra }) => {
     window.GH_API_BASE = stub;
+    Object.assign(window, extra);
     localStorage.setItem('data_configuration', JSON.stringify(cfg));
-    localStorage.setItem('github_token', 'stub-token');
-  }, { stub: `http://localhost:${stubPort}`, cfg: config });
+    if (tok) localStorage.setItem('github_token', tok);
+  }, { stub: `http://localhost:${stubPort}`, cfg: config, tok: token, extra: pageGlobals });
 
   let passes = 0;
   let failures = 0;
@@ -96,6 +103,7 @@ export async function startTest({ name, seed = {}, config = FINANCE_CONFIG, time
       await browser.close();
       await appServer.close();
       await stubServer.close();
+      for (const fn of cleanup) await fn();
       fs.rmSync(dataDir, { recursive: true, force: true });
       console.log(`\n${passes}/${expected} passed.${note}`);
       process.exit(failures ? 1 : 0);

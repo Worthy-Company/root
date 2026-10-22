@@ -44,8 +44,13 @@ function readBody(req) {
   });
 }
 
-/** Start the stub server in-process. Returns { server, port, close() }. */
-export function startStubServer({ dir, port }) {
+/**
+ * Start the stub server in-process. Returns { server, port, close() }.
+ * `requireToken`, if given, makes the stand-in answer 401 to any request that does not carry
+ * exactly that token, as GitHub does for a private repo, so a test can tell the page really
+ * used the key it was given.
+ */
+export function startStubServer({ dir, port, requireToken = null }) {
   const fixturesDir = path.resolve(dir);
   if (!fs.existsSync(fixturesDir)) {
     throw new Error(`Fixtures dir not found: ${fixturesDir}`);
@@ -66,6 +71,10 @@ export function startStubServer({ dir, port }) {
 
     const url = new URL(req.url, `http://localhost:${port}`);
     const pathname = decodeURIComponent(url.pathname);
+
+    if (requireToken && req.headers.authorization !== 'Bearer ' + requireToken) {
+      return send(res, 401, { message: 'Bad credentials' });
+    }
 
     // GET /repos/:owner/:repo/git/ref/heads/:branch — pretend every branch exists.
     let m = pathname.match(/^\/repos\/([^/]+)\/([^/]+)\/git\/ref\/heads\/(.+)$/);

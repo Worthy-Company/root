@@ -124,6 +124,25 @@
       return await attemptOnce();
     }
   }
+  /**
+   * Change a JSON file that is a plain list and save it. Reads the list fresh, lets `change` return the
+   * new list, and writes it; a missing file counts as an empty list. Like ghSaveJson (which stamps an
+   * updatedAt onto an object, so it cannot save a bare list), it retries once with a fresh read if the
+   * file moved on in between. Returns the saved list.
+   */
+  async function ghUpdateList(token, repo, filePath, branchName, change, message) {
+    async function attemptOnce() {
+      const existing = await ghReadFile(token, repo, filePath, branchName);
+      const list = change(Array.isArray(existing?.content) ? existing.content : []);
+      await ghWriteFile(token, repo, filePath, list, branchName, existing?.sha, GH_MSG(message));
+      return list;
+    }
+    try {
+      return await attemptOnce();
+    } catch (err) {
+      return await attemptOnce();
+    }
+  }
   /** Create a PR or return existing open PR URL. */
   async function ghCreateOrUpdatePr(token, repo, mainBranch, headBranch, title, body) {
     const [owner, repoName] = repo.split('/');
@@ -149,6 +168,7 @@
   window.ghReadFile = ghReadFile;
   window.ghWriteFile = ghWriteFile;
   window.ghSaveJson = ghSaveJson;
+  window.ghUpdateList = ghUpdateList;
   window.ghWaitForFreshRead = ghWaitForFreshRead;
   window.ghCreateOrUpdatePr = ghCreateOrUpdatePr;
 })();
