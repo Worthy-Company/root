@@ -18,7 +18,9 @@
  * `pageGlobals` are extra values set on `window` before the page loads (how a
  * test points the page at a stand-in that only its own area uses, kept in
  * that area's test/ folder), and `cleanup` is a list of functions to run
- * when the test ends (to stop such a stand-in).
+ * when the test ends (to stop such a stand-in). `appDir` is the folder served as the
+ * site (default: this repository's root); a test of an app that must work on its own
+ * passes a folder holding only that app and what it includes.
  * Tests still describe themselves in their own header comment; see
  * how-we-work/testing.md and finance/test/link-to-action.mjs for the style.
  */
@@ -47,7 +49,7 @@ function freePort() {
   });
 }
 
-export async function startTest({ name, seed = {}, config = FINANCE_CONFIG, token = 'stub-token', requireToken = null, pageGlobals = {}, cleanup = [], timeout = 3000 }) {
+export async function startTest({ name, seed = {}, config = FINANCE_CONFIG, token = 'stub-token', requireToken = null, pageGlobals = {}, cleanup = [], appDir = repoRoot, timeout = 3000 }) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), name + '-'));
   const write = (file, content) => {
     const filePath = path.join(dataDir, file);
@@ -59,7 +61,7 @@ export async function startTest({ name, seed = {}, config = FINANCE_CONFIG, toke
 
   const appPort = await freePort();
   const stubPort = await freePort();
-  const appServer = await startStaticServer({ dir: repoRoot, port: appPort });
+  const appServer = await startStaticServer({ dir: appDir, port: appPort });
   const stubServer = await startStubServer({ dir: dataDir, port: stubPort, requireToken });
   const browser = await chromium.launch();
   const page = await browser.newPage();
